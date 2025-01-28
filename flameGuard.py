@@ -5,7 +5,6 @@ import re
 import os
 from dotenv import load_dotenv
 
-# Load the environment variables from .env file
 load_dotenv()
 
 # Bot setup
@@ -45,7 +44,7 @@ async def check_members(ctx):
         return
 
     # Parse the guild data
-    guild_data = response.json()
+    #guild_data = response.json()
 
     # Debugging print to inspect the structure of the guild data
     print(guild_data)  # This will show you the data structure
