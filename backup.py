@@ -26,7 +26,9 @@ GUILD_RANK_ROLE = ["🔱Knight", "🛡️Duke", "⚜️Baron", "⭐ArchDuke", "�
 
 # Define watched channels for automated role sync
 WATCHED_CHANNELS = [1080919063213121636,
-                    1080918159210594467]
+                    # LAST ONE IS TESTING - ADMIN BOT COMMANDS
+                    1080918159210594467, 785180402067177523]
+
 # Cooldown dictionary: {channel_id: last_triggered_timestamp}
 cooldown_tracker = {}
 #
@@ -169,102 +171,6 @@ async def check_discord(ctx):
 #
 @bot.command()
 async def assign_roles(ctx):
-    """Assign the 'FlameKnights' role and rank roles to matching guild members in Discord."""
-    await ctx.send("Assigning roles... 🔥")
-
-    # Fetch guild data from Wynncraft API
-    response = requests.get(FLAMEKNIGHTS_API_URL)
-    if response.status_code != 200:
-        await ctx.send("Failed to fetch guild data. Please try again later. 😢")
-        return
-
-    guild_data = response.json()
-    if "members" not in guild_data:
-        await ctx.send("Failed to find members in guild data. 😢")
-        return
-
-    # Extract player names and ranks from the guild
-    flameknights_players = []
-    player_ranks = {}  # MARK: Added dictionary to store player rank mappings
-    for role, role_members in guild_data["members"].items():
-        if isinstance(role_members, dict):
-            for player_name, player_data in role_members.items():
-                flameknights_players.append(player_name)
-                # MARK: Mapping player to their rank role
-                player_ranks[player_name] = role
-
-    print("Total Players Extracted:", len(flameknights_players))  # Final count
-
-    # Normalize names
-    normalized_guild_players = [normalize_name(
-        player) for player in flameknights_players]
-
-    # Normalize both Discord usernames and display names
-    normalized_discord_users = {
-        normalize_name(member.name): member for member in ctx.guild.members
-    }
-    normalized_discord_display_names = {
-        normalize_name(member.display_name): member for member in ctx.guild.members
-    }
-
-    # Get the "FlameKnights" role
-    role = discord.utils.get(ctx.guild.roles, name=GUILD_ROLE_NAME)
-
-    if not role:
-        await ctx.send(f"❌ Role '{GUILD_ROLE_NAME}' not found! Please create the role first.")
-        return
-
-    # Debugging information
-    print("\n")
-    print("Total Discord Members:", len(normalized_discord_users))
-    print("Total Guild Members:", len(normalized_guild_players))
-
-    assigned_count = 0
-    unmatched_players = []  # List of players not found in Discord
-
-    for player in normalized_guild_players:
-        member = normalized_discord_users.get(
-            player) or normalized_discord_display_names.get(player)
-
-        if member:
-            # Get the "FlameKnights" role (or another role as needed)
-            role = discord.utils.get(ctx.guild.roles, name=GUILD_ROLE_NAME)
-
-            if role and role not in member.roles:  # Check if the member doesn't already have the role
-                try:
-                    await member.add_roles(role)
-                    print(f"Assigned {role.name} to {member.display_name}")
-                    assigned_count += 1
-                except discord.Forbidden:
-                    print(
-                        f"❌ No permission to assign roles to {member.display_name}.")
-                except discord.HTTPException:
-                    print(
-                        f"⚠️ Failed to assign role to {member.display_name}.")
-
-    print(f"✅ Successfully Assigned Roles: {assigned_count}")
-    print(f"❌ Players Not Found in Discord: {len(unmatched_players)}")
-    # Print missing players for debugging
-    print("Unmatched Players:", unmatched_players)
-
-    if unmatched_players:
-        unmatched_list = "\n".join(unmatched_players)
-        await ctx.send(f"⚠️ The following **{len(unmatched_players)}** players were not found in Discord:\n```{unmatched_list}```")
-        await ctx.send("Make sure their Discord usernames match their in-game names!")
-
-    await ctx.send(f"✅ Assigned '{GUILD_ROLE_NAME}' role to **{assigned_count}** members!")
-
-    # Check for discord members not in the guild
-    for member in ctx.guild.members:
-        if any(role.name == "🤖BOT" or role.name != "FlameKnight" for role in member.roles):
-            continue  # Skip the bot
-        normalized_member_name = normalize_name(member.name)
-        normalized_member_display_name = normalize_name(member.display_name)
-        if normalized_member_name not in normalized_guild_players and normalized_member_display_name not in normalized_guild_players:
-            await ctx.send(f"❌ {member.display_name} ({member.name}) is not part of the FlameKnights guild.")
-
-    await ctx.send("🔥 FlameKnights have been guarded! 👑")
-
     """Assign the 'FlameKnights' role to matching guild members in Discord."""
     await ctx.send("Assigning roles... 🔥")
 
@@ -281,13 +187,13 @@ async def assign_roles(ctx):
 
     # Extract player names from the guild
     flameknights_players = []
-    player_ranks = {}  # A dictionary to store player rank mappings
     for role, role_members in guild_data["members"].items():
         if isinstance(role_members, dict):
-            for player_name, player_data in role_members.items():
-                flameknights_players.append(player_name)
-                # Assigning the player their rank based on role
-                player_ranks[player_name] = role
+            # Debugging
+            print(f"Role: {role}, Members Found: {len(role_members)}")
+            flameknights_players.extend(role_members.keys())  # Add members
+        else:
+            print(f"Unexpected format in role: {role}")  # Debugging for errors
 
     print("Total Players Extracted:", len(flameknights_players))  # Final count
 
@@ -305,7 +211,6 @@ async def assign_roles(ctx):
 
     # Get the "FlameKnights" role
     role = discord.utils.get(ctx.guild.roles, name=GUILD_ROLE_NAME)
-
     if not role:
         await ctx.send(f"❌ Role '{GUILD_ROLE_NAME}' not found! Please create the role first.")
         return
