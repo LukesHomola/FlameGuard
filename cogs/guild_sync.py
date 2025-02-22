@@ -92,6 +92,18 @@ class GuildSync(commands.Cog):
 
     @commands.command()
     async def assign_roles(self, ctx):
+        # Permissions required to use
+        required_role = "FG_Admin"
+        member = ctx.author
+        
+        # Check if player has the permissions to proceed
+        if discord.utils.get(member.roles, name=required_role):
+            await ctx.send(f"{member.display_name} has the {required_role} role!")
+        else:
+            await ctx.send(f"{member.display_name} does not have the {required_role} role!")
+            return
+
+        
         """Assign the 'FlameKnights' role and highest rank role to matching guild members."""
         await ctx.send("Assigning roles... 🔥")
 
@@ -164,6 +176,82 @@ class GuildSync(commands.Cog):
                                     await ctx.send(f"⚠️ Failed to assign the {discord_role_name} role to {member.display_name}.")
 
         await ctx.send(f"Assigned {assigned_count} roles. 🔥")
+
+    @commands.command()
+    async def check_discord(self, ctx):
+                # Permissions required to use
+        required_role = "FG_Admin"
+        member = ctx.author
+        
+        # Check if player has the permissions to proceed
+        if discord.utils.get(member.roles, name=required_role):
+            await ctx.send(f"{member.display_name} has the {required_role} role!")
+        else:
+            await ctx.send(f"{member.display_name} does not have the {required_role} role!")
+            return
+
+        
+        await ctx.send("Checking members... 🔍")
+
+        # Fetch guild data from Wynncraft API
+        response = requests.get(FLAMEKNIGHTS_API_URL)
+        if response.status_code != 200:
+            await ctx.send("Failed to fetch guild data. Please try again later. 😢")
+            return
+
+        # Parse the guild data
+        guild_data = response.json()
+
+        # Debugging print to inspect the structure of the guild data
+        print(guild_data)  # This will show you the data structure
+
+        if "members" not in guild_data:
+            await ctx.send("Failed to find members in guild data. 😢")
+            return
+
+        # Extract player names from the guild data (case-insensitive)
+        flameknights_players = []
+        for role, role_members in guild_data["members"].items():
+            if role == "total":
+                continue  # Skip the "total" key
+            if isinstance(role_members, dict):
+                for member_name in role_members.keys():
+                    flameknights_players.append(member_name)
+            else:
+                await ctx.send(f"Unexpected format for role members: {role_members}")
+                return
+
+        # Fetch the list of Discord members (both display name and username)
+        discord_members = [normalize_name(member.display_name) for member in ctx.guild.members] + \
+            [normalize_name(member.name) for member in ctx.guild.members]
+
+        # Normalize the in-game player names
+        normalized_flameknights_players = [normalize_name(
+            player) for player in flameknights_players]
+
+        # Find missing players
+        missing_players = [
+            player for player in normalized_flameknights_players if player not in discord_members]
+
+        if not missing_players:
+            await ctx.send("All FlameKnights are in the Discord server! 👑🎉")
+        else:
+            # Prepare the table header
+            table_header = "```markdown\n" + \
+                "{:<25}  {:<10}".format("Player Name", "Status") + "\n"
+            table_separator = "-" * 50  # Create a separator for the table
+
+            # Prepare the rows for missing players
+            missing_rows = "\n".join(
+                [f"{player:<25}  {'Missing':<10}" for player in missing_players])
+
+            # Combine the header, separator, and rows
+            table_message = table_header + table_separator + "\n" + missing_rows + "\n```"
+
+            await ctx.send(table_message)
+            await ctx.send("Make sure to double check missing players! 👀")
+
+
 
 # Register cog
 async def setup(bot):

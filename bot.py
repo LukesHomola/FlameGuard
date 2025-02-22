@@ -14,6 +14,8 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Import the GuildSync cog
 from cogs.guild_sync import GuildSync  # This imports the cog from the cogs folder
+from cogs.challenges import Challenges  # This imports the cog from the cogs folder
+
 
 # Cooldown dictionary: {channel_id: last_triggered_timestamp}
 cooldown_tracker = {}
@@ -43,6 +45,7 @@ async def load_cogs():
 
 # ✅ Add the GuildSync cog here
 bot.add_cog(GuildSync(bot))  # Register the cog
+bot.add_cog(Challenges(bot))
 
 # ✅ Help message command
 @bot.command()
