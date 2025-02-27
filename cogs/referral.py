@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands
 import mysql.connector
 import os
+import requests
+
 
 class Referral(commands.Cog):
     def __init__(self, bot):
@@ -38,13 +40,28 @@ class Referral(commands.Cog):
             await ctx.send(f"{member.display_name} does not have the {required_role} role!")
             return
 
-
-
         if not referred_ign:
             await ctx.send("❌ Incorrect usage \n\n **Usage:** `!refer <IGN>`\n Example: `!refer Steve`")
             return
         
         referred_member = None
+
+        # Fetching guild players to get playtime at join
+        response = requests.get("https://api.wynncraft.com/v3/player/" + referred_ign)
+        referred = response.json() 
+        playtime = referred.get("playtime", 0) 
+
+        # Print raw response (before converting to JSON)
+        print(f"Response Status Code: {response.status_code}")
+        print(f"Raw Response Text: {response.text}")
+        print(f"Player Playtime: {playtime} hours")
+        
+
+        if response.status_code != 200:
+            return await print(f"❌ Failed to fetch player data for `{referred_ign}`. Try again later.")
+        else:
+            guild_data = response.json()
+            print(guild_data)  # Print the full JSON response for debugging
 
 
         # If mention is used (ex: !refer @Steve), extract user ID
@@ -70,8 +87,6 @@ class Referral(commands.Cog):
         if referred_member.bot or (bot_role and bot_role in referred_member.roles):
             return await ctx.send(f"❌ `{referred_member.display_name}` cannot referr a bot.")
 
-
-
         referred_ign = referred_member.display_name  # Store clean username in the database
         referred_id = referred_member.id  
 
@@ -83,10 +98,10 @@ class Referral(commands.Cog):
             return
 
         query = """
-        INSERT INTO referrals (referrer_ign, referrer_id, referred_ign, referred_id, referred_since, logged_at, valid)
-        VALUES (%s, %s, %s, %s, NOW(), NULL, FALSE)
+        INSERT INTO referrals (referrer_ign, referrer_id, referred_ign, referred_id, logged_at, referred_since, last_activity, valid, hours)
+        VALUES (%s, %s, %s, %s, NOW(), NUll, NULL, FALSE, %s)
         """
-        values = (referrer_ign, referrer_id, referred_ign, referred_id)
+        values = (referrer_ign, referrer_id, referred_ign, referred_id, playtime)
 
         try:
             cursor = self.db.cursor()
@@ -96,10 +111,60 @@ class Referral(commands.Cog):
         except mysql.connector.Error as e:
             await ctx.send(f"❌ Error adding referral: {e}")
 
-        
+    @commands.command(name="referal_list")
+    async def referal_list(self, ctx):
+        required_role = "FlameKnight"
+        member = ctx.author
 
+        if not discord.utils.get(member.roles, name=required_role):
+            await ctx.send(f"❌ {member.display_name} does not have the `{required_role}` role!")
+            return
 
+        if not self.db:
+            return await ctx.send("❌ Database connection is unavailable.")
 
+        query = "SELECT id, referrer_ign, referred_ign, logged_at, valid FROM referrals"
+
+        try:
+            cursor = self.db.cursor()
+            cursor.execute(query)
+            referrals = cursor.fetchall()
+            cursor.close()
+
+            if not referrals:
+                await ctx.send("📜 No referrals found.")
+                return
+
+            # 📜 Simple Test Embed
+            embed = discord.Embed(
+                title="📜 Referral List",
+                description="List of all referrals in the database. \n",
+                color=discord.Color.blue()
+            )
+            referral_text = ""
+
+            for row in referrals[:10]:  # Limit to avoid issues
+                ref_id, referrer, referred, logged_at, valid = row
+                logged_at = logged_at.strftime("%Y-%m-%d %H:%M") if logged_at else "N/A"
+                verified = "✅" if valid else "❌"
+
+                # Append each referral with clear spacing
+                referral_text += (
+                    f"⠀⠀⠀⠀⠀⠀⠀\n" 
+                    f"**#️⃣ Referral #{ref_id}**\n"
+                    f"👤 Recruiter: **{referrer}**\n"
+                    f"👥 New Member: **{referred}**\n"
+                    f"🕒 Logged: **{logged_at}**\n"
+                    f"📝 Verified: **{verified}**\n"
+                    f"⠀⠀⠀⠀⠀⠀⠀\n" 
+                )
+
+            # Add final text as a single field
+            embed.add_field(name="", value=referral_text, inline=False)
+
+            await ctx.send(embed=embed)  # ✅ Test if Embed Sends
+        except mysql.connector.Error as e:
+            await ctx.send(f"❌ Database error: {e}")
 
 # Register cog
 async def setup(bot):

@@ -52,12 +52,50 @@ bot.add_cog(Referral(bot))
 @bot.command()
 async def guard_help(ctx):
     """Show the list of available commands"""
-    embed = discord.Embed(title="FlameGuard Commands",
-                          description="**!guard_help** - Show the list of available commands. " + "\n" +
-                          "**!check_discord** - List of guild members missing on our discord. " + "\n" +
-                          "**!assign_roles** - Assign discord member role if player is part of the guild. ",
-                          color=discord.Color.red())
+    embed = discord.Embed(
+        title="**GUARD HELP**",
+        description="*List of FlameGuard commands*",
+        color=discord.Color.red()
+    )
+
+    embed.add_field(
+        name="⠀\n**GLOBAL COMMANDS**",
+        value="- **!guard_help** => Display help menu.",
+        inline=False
+    )
+
+    embed.add_field(
+        name="⠀\n**GUILD CHALLENGE**",
+        value=(
+            "- **!active_challenges** => Display currently active challenges.\n"
+            "- **!challenge_xp_weekly** => Display the currently active XP weekly challenge.\n"
+            "- **!challenge_xp_monthly** => Display the currently active XP monthly challenge.\n"
+            "- **!challenge_guild_streak** => Display the currently active streak monthly challenge."
+        ),
+        inline=False
+    )
+
+    embed.add_field(
+        name="⠀\n**REFERRAL SYSTEM**",
+        value=(
+            "- **!referal_list** => Display referrals waiting for approval.\n"
+            "- **!refer** => After recruiting a player, send request for referral approval."
+        ),
+        inline=False
+    )
+
+    embed.add_field(
+        name="⠀\n**RESTRICTED COMMANDS**",
+        value=(
+            "- **!check_discord** => Display list of guild members for player sync.\n"
+            "- **!assign_roles** => Assign roles to missing players.\n"
+            "- **!refer_verify** => Verify referrals awaiting approval."
+        ),
+        inline=False
+    )
+
     await ctx.send(embed=embed)
+
 
 # ✅ Reload a specific cog command (for bot owner)
 @commands.is_owner()
@@ -103,6 +141,7 @@ async def on_message(message):
 async def assign_roles_silent(guild):
     """Assign the correct in-game rank role to matching guild members **without sending messages**."""
     # Your role assignment logic goes here...
+
 
 # ✅ Main function to start bot
 async def main():
