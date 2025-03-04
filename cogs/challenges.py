@@ -26,7 +26,7 @@ class Challenges(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def challenge_xp_monthly(self, ctx):
+    async def challenge_hall_of_frames(self, ctx):
         # Check if player has the permissions to proceed
         required_role = "FlameKnight"
         member = ctx.author
@@ -37,24 +37,27 @@ class Challenges(commands.Cog):
         else:
             await ctx.send(f"{member.display_name} does not have the {required_role} role!")
             return
-        
+
         embed = discord.Embed(
-            title="**CHALLENGE - XP MONTHLY**",
+            title="**CHALLENGE - HALL OF FRAMES**",
             description="❔ **CHALLENGE DESCRIPTION** ❔\n\n"
-                        "‎ ‎ ‎ ‎‎ ‎ ‎  - Contribute most xp to the guild in next month.\n"
-                        "‎ ‎ ‎ ‎ ‎ ‎  - You can check current **top** players by **contributed **xp - **/guild list**\n"
-                        "‎ ‎ ‎ ‎ ‎ ‎  - **HINT**: Use command /guild xp <% number> to contribute xp\n\n"
+                        "‎ ‎ ‎ ‎‎ ‎ ‎  - Competition in best looking WynnShot.\n"
+                        "‎ ‎ ‎ ‎ ‎ ‎  - Use the subthread for this challenge.\n"
+                        "‎ ‎ ‎ ‎ ‎ ‎  - **HINT**: Photoshop / similar programs are allowed.\n\n"
                         "❓ **CHALLENGE RULES** ❓\n\n"
-                        "‎ ‎ ‎ ‎‎ ‎ ‎  - Minimum contributed in this period: 300,000,000 guild xp.\n\n"
-                        "📘 Recommended level: 105\n\n"
+                        "‎ ‎ ‎ ‎ ‎ ‎  - At least 3 submissions are needed to prevent challenge cancellation.\n"
+                        "‎ ‎ ‎ ‎ ‎ ‎  - Only one submission per player\n"
+                        "‎ ‎ ‎ ‎ ‎ ‎  - The screenshot must be taken in the world of Wynncraft.\n"
+                        "‎ ‎ ‎ ‎‎ ‎ ‎  - The posted image must be entirely your own work!\n\n"
+                        "📘 Recommended level: Any level\n\n"
                         "📜 **CHALLENGE INFORMATION** 📜\n\n"
-                        "‎ ‎ ‎ ‎‎ ‎ ‎  - Challenge starts <t:1740783600:R>\n"
-                        "‎ ‎ ‎ ‎ ‎ ‎  - Challenge ends <t:1743458400:R>\n\n"
+                        "‎ ‎ ‎ ‎‎ ‎ ‎  - Challenge starts <t:1740999600:R>\n"
+                        "‎ ‎ ‎ ‎ ‎ ‎  - Challenge ends <t:1743674400:R>\n"
                         "💰 **CHALLENGE PRIZE POOL** 💰\n\n"
                         "‎ ‎ ‎ ‎‎ ‎ ‎  - 🥇 1 Guild Tome + 15 LE\n"
-                        "‎ ‎ ‎ ‎‎ ‎ ‎  - 🥈 5 LE + 15 uth runes\n"
-                        "‎ ‎ ‎ ‎‎ ‎ ‎  - 🥉 3 LE + 5 uth runes",
-            color=discord.Color.red()
+                        "‎ ‎ ‎ ‎‎ ‎ ‎  - 🥈 10 LE\n"
+                        "‎ ‎ ‎ ‎‎ ‎ ‎  - 🥉 5 LE + 5 uth runes",
+            color=discord.Color.yellow()
         )
         await ctx.send(embed=embed)
 
@@ -91,6 +94,38 @@ class Challenges(commands.Cog):
         )
         await ctx.send(embed=embed)
 
+    @commands.command()
+    async def challenge_xp_monthly(self, ctx):
+        # Check if player has the permissions to proceed
+        required_role = "FlameKnight"
+        member = ctx.author
+        
+        # Check if player has the permissions to proceed
+        if discord.utils.get(member.roles, name=required_role):
+            await ctx.send(f"{member.display_name} has the {required_role} role!")
+        else:
+            await ctx.send(f"{member.display_name} does not have the {required_role} role!")
+            return
+        
+        embed = discord.Embed(
+            title="**CHALLENGE - XP MONTHLY**",
+            description="❔ **CHALLENGE DESCRIPTION** ❔\n\n"
+                        "‎ ‎ ‎ ‎‎ ‎ ‎  - Contribute most xp to the guild in next month.\n"
+                        "‎ ‎ ‎ ‎ ‎ ‎  - You can check current **top** players by **contributed **xp - **/guild list**\n"
+                        "‎ ‎ ‎ ‎ ‎ ‎  - **HINT**: Use command /guild xp <% number> to contribute xp\n\n"
+                        "❓ **CHALLENGE RULES** ❓\n\n"
+                        "‎ ‎ ‎ ‎‎ ‎ ‎  - Minimum contributed in this period: 300,000,000 guild xp.\n\n"
+                        "📘 Recommended level: 105\n\n"
+                        "📜 **CHALLENGE INFORMATION** 📜\n\n"
+                        "‎ ‎ ‎ ‎‎ ‎ ‎  - Challenge starts <t:1740783600:R>\n"
+                        "‎ ‎ ‎ ‎ ‎ ‎  - Challenge ends <t:1743458400:R>\n\n"
+                        "💰 **CHALLENGE PRIZE POOL** 💰\n\n"
+                        "‎ ‎ ‎ ‎‎ ‎ ‎  - 🥇 1 Guild Tome + 15 LE\n"
+                        "‎ ‎ ‎ ‎‎ ‎ ‎  - 🥈 5 LE + 15 uth runes\n"
+                        "‎ ‎ ‎ ‎‎ ‎ ‎  - 🥉 3 LE + 5 uth runes",
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
 
     @commands.command()
     async def challenge_guild_streak(self, ctx):
@@ -125,6 +160,42 @@ class Challenges(commands.Cog):
             color=discord.Color.green()
         )
         await ctx.send(embed=embed)
+
+    # Challenge closed messages
+
+    @commands.command()
+    async def challenge_xp_weekly_closed(self, ctx):
+        # Check if player has the permissions to proceed
+        required_role = "FG_Admin"
+        member = ctx.author
+        
+        # Check if player has the permissions to proceed
+        if discord.utils.get(member.roles, name=required_role):
+            await ctx.send(f"{member.display_name} has the {required_role} role!")
+        else:
+            await ctx.send(f"{member.display_name} does not have the {required_role} role!")
+            return
+
+        embed = discord.Embed(
+            title="**CHALLENGE CLOSED  - XP WEEKLY**",
+            description="🏆 **WINNER ANNOUCEMENT** 🏆\n\n"
+                        "📜 **CHALLENGE INFORMATION** 📜\n\n"
+                        "‎ ‎ ‎ ‎‎ ‎ ‎  - Contribute most xp to the guild in next week.\n"
+                        "‎ ‎ ‎ ‎ ‎ ‎  - Challenge ended <t:1740956400:R>\n\n"
+                        "❓ **CHALLENGE RULES** ❓\n\n"
+                        "‎ ‎ ‎ ‎‎ ‎ ‎  - Minimum contributed in this period: 50,000,000 guild xp.\n\n"
+                        "🏆 **CHALLENGE WINNERS** 🏆\n\n"
+                        "‎ ‎ ‎ ‎‎ ‎ ‎  - 🥇 <@931870081913339974> - 1 Guild Tome + 5 LE\n"
+                        "‎ ‎ ‎ ‎‎ ‎ ‎  - 🥈 **NONE** - 3 LE\n"
+                        "‎ ‎ ‎ ‎‎ ‎ ‎  - 🥉 **NONE** - 1 LE + 5 uth runes\n\n"
+                        "❔ **REWARD CLAIM** ❔\n\n"
+                        "‎ ‎ ‎ ‎‎ ‎ ‎  - To claim your reward, please contact <@437685536585547797>\n\n"
+                        "🎉 **CONGRATULATIONS!** 🎉\n\n",
+
+            color=discord.Color.green()
+        )
+        await ctx.send(embed=embed)
+
 
 # Register cog
 async def setup(bot):
