@@ -31,7 +31,7 @@ class Referral(commands.Cog):
     async def refer(self, ctx, referred_ign: str = None):
         """Command to add a referral (only IGN is needed)"""
         # Permissions required to use
-        required_role = "FlameKnight"
+        required_role = "Recruiting"
         member = ctx.author
         
         # Check if player has the permissions to proceed
@@ -53,9 +53,9 @@ class Referral(commands.Cog):
         playtime = referred.get("playtime", 0) 
 
         # Print raw response (before converting to JSON)
-        print(f"Response Status Code: {response.status_code}")
-        print(f"Raw Response Text: {response.text}")
-        print(f"Player Playtime: {playtime} hours")
+        #print(f"Response Status Code: {response.status_code}")
+        #print(f"Raw Response Text: {response.text}")
+        #print(f"Player Playtime: {playtime} hours")
         
 
         if response.status_code != 200:
@@ -71,7 +71,7 @@ class Referral(commands.Cog):
             referred_member = ctx.guild.get_member(int(mentioned_id))
         else:
             # Normalize the input (convert to lowercase and remove leading emoji/symbol)
-            normalized_ign = referred_ign.lower().lstrip("🔱🛡️⚜️⭐🌟📃👑")  # Add more symbols if needed
+            normalized_ign = referred_ign.lower().lstrip("🔱🛡️⚜️⭐🌟👑📃")  # Add more symbols if needed
 
             # Try matching by exact Discord username
             referred_member = discord.utils.find(lambda m: m.name.lower() == normalized_ign, ctx.guild.members)
@@ -138,44 +138,170 @@ class Referral(commands.Cog):
                 await message.add_reaction("✅")  # Verify reaction
                 await message.add_reaction("❌")  # Remove reaction
 
+                # Add the "🔁" reaction before processing any other actions
+                if "🔁" not in [reaction.emoji for reaction in reaction.message.reactions]:
+                    await reaction.message.add_reaction("🔁")  # Allow changing decision
+
             else:
                 await ctx.send("❌ Unable to find referral channel.") 
         except mysql.connector.Error as e:
             await ctx.send(f"❌ Error adding referral: {e}")
-
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
-        """Handles the reactions to verify or remove referrals."""
+        """Handles reactions to verify or deny referrals."""
         if user.bot:  # Ignore bot reactions
             return
 
-        # Check if the reaction is on the correct message
-        if reaction.message.embeds and reaction.message.embeds[0].title == "🚫 **New referral - Approval needed**":
-            # Get the referral information
-            referrer_ign = reaction.message.embeds[0].fields[0].value.split("⠀- ")[1]
-            referred_ign = reaction.message.embeds[0].fields[1].value.split("⠀- ")[1]
-            
-            is_answered = False  # Ensure this variable is handled manually
+        print(f"Reaction added by {user.name}: {reaction.emoji}")  # Debug
 
-            # Check if the referral has already been answered (processed)
-            if is_answered:
-                await reaction.message.channel.send("❌ This referral has already been processed, no further reactions are allowed.")
-                return
+        # Ensure the message has an embed and matches the referral message
+        if not reaction.message.embeds:
+            print("No embed found.")
+            return
+        
+        embed = reaction.message.embeds[0]
+        if embed.title != "🚫 **New referral - Approval needed**":
+            print("Embed title does not match.")
+            return
 
-            # If the reaction is ✅ (verify)
-            if reaction.emoji == "✅" and not is_answered:
-                is_answered = True  # Mark as answered
-                await reaction.message.channel.send(f"✅ Referral for {referred_ign} verified by {user.display_name}.")
-                # You can update the database or any other action to verify the referral here.
+        # Extract referral data
+        referrer_ign = embed.fields[0].value.split("⠀- ")[1]
+        referred_ign = embed.fields[1].value.split("⠀- ")[1]
+        
+        print(f"Processing referral: {referrer_ign} → {referred_ign}")  # Debug
 
-            # If the reaction is ❌ (remove)
-            elif reaction.emoji == "❌" and not is_answered:
-                is_answered = True  # Mark as answered
-                await reaction.message.channel.send(f"❌ Referral for {referred_ign} removed by {user.display_name}.")
-                # You can update the database or any other action to remove the referral here.
+        # Determine action based on reaction
+        if reaction.emoji == "✅":
+            status_text = f"✅ Verified by {user.display_name}"
+            color = discord.Color.green()
+            valid_status = 1
+        elif reaction.emoji == "❌":
+            status_text = f"❌ Denied by {user.display_name}"
+            color = discord.Color.red()
+            valid_status = 0
+        else:
+            return  # Ignore other reactions
 
-            # Optionally, remove the reactions after processing:
+        message = reaction.message
+
+        # **Step 1: Clear All Reactions Immediately**
+        try:
             await reaction.message.clear_reactions()
+            print("Reactions cleared.")  # Debug
+        except Exception as e:
+            print(f"Clear reactions error: {e}")
+
+        # **Step 2: Re-register the reaction event to allow future changes**
+        def check(reaction, user):
+            return reaction.message.id == message.id and not user.bot  # Ensure it's the same message
+
+        try:
+            query = "UPDATE referrals SET valid = %s, referred_since = NOW() WHERE referred_ign = %s"
+            cursor = self.db.cursor()
+            cursor.execute(query, (valid_status, referred_ign))
+            self.db.commit()
+            print("Database updated successfully.")  # Debug
+        except Exception as e:
+            print(f"Database update error: {e}")
+
+        # **Step 3: Update Embed Message**
+        try:
+            new_embed = embed.copy()
+            new_embed.title = status_text
+            new_embed.color = color
+            await reaction.message.edit(embed=new_embed)
+            print("Message edited successfully.")  # Debug
+            # Add option to change decision
+        except Exception as e:
+            print(f"Message edit error: {e}")
+
+    @commands.command(name="refer_admin")
+    async def refer_admin(self, ctx, referrer_ign: str = None, referred_ign: str = None):
+        """Refer a player to the server."""
+        # Permissions required to use
+        required_role = "FG_Admin"
+        member = ctx.author
+        
+        # Check if player has the permissions to proceed
+        if discord.utils.get(member.roles, name=required_role):
+            print(f"{member.display_name} has the {required_role} role!")
+        else:
+            await ctx.send(f"{member.display_name} does not have the {required_role} role!")
+            return
+
+        if not referred_ign:
+            await ctx.send("❌ Incorrect usage \n\n **Usage:** `!refer_admin <REFERRER> <REFERRED>`\n Example: `!refer Steve Alex`")
+            return
+
+        if not referrer_ign:
+            await ctx.send("❌ Incorrect usage \n\n **Usage:** `!refer_admin <REFERRER> <REFERRED>`\n Example: `!refer Steve Alex`")
+            return
+
+        # Normalize the input to handle possible emojis or extra characters
+        normalized_referrer_ign = referrer_ign.lower().strip("🔱🛡️⚜️⭐🌟📃👑")  # Adjust for other emojis if needed
+        normalized_referred_ign = referred_ign.lower().strip("🔱🛡️⚜️⭐🌟📃👑")
+
+        # Find the referrer by name or display_name
+        referrer_member = discord.utils.find(
+            lambda m: m.name.lower() == normalized_referrer_ign or m.display_name.lower() == normalized_referrer_ign,
+            ctx.guild.members
+        )
+        # Find the referred player by name or display_name
+        referred_member = discord.utils.find(
+            lambda m: m.name.lower() == normalized_referred_ign or m.display_name.lower() == normalized_referred_ign,
+            ctx.guild.members
+        )
+
+
+
+        print("PRINT 1 \n")
+        print("REFERRER: ", referrer_ign)
+        print("REFERRED: ", referred_ign)
+        print("REFERRER MEMBER: ", referrer_member)
+        print("REFERRED MEMBER: ", referred_member)
+
+
+        if not referrer_member:
+            await ctx.send(f"❌ Referrer `{referrer_ign}` not found in the guild.")
+            return
+
+        if not referred_member:
+            await ctx.send(f"❌ Referred player `{referred_ign}` not found in the guild.")
+            return
+
+
+
+        # Get the Discord IDs for both users
+        referrer_id = referrer_member.id
+        referred_id = referred_member.id
+
+        # Check if the referred player is already in the server
+
+        response = requests.get(f"https://api.wynncraft.com/v3/player/{referred_ign}")
+        referred = response.json()
+        playtime = referred.get("playtime", 0)
+        
+        if response.status_code != 200:
+            return await ctx.send(f"❌ Failed to fetch player data for `{referred_ign}`. Try again later.")
+
+        print("PRINT 2 \n")
+        print("REFERRER: ", referrer_ign)
+        print("REFERRED: ", referred_ign)
+
+        query = """
+        INSERT INTO referrals (referrer_ign, referrer_id, referred_ign, referred_id, logged_at, referred_since, last_activity, valid, hours)
+        VALUES (%s, %s, %s, %s, NOW(), NOW(), NULL, TRUE, %s)
+        """
+        values = (referrer_ign, referrer_id, referred_ign, referred_id, playtime)
+
+        try:
+            cursor = self.db.cursor()
+            cursor.execute(query, values)
+            self.db.commit()
+            await ctx.send(f"✅ Referral created \n\n {referred_ign} has been referred by {referrer_ign}, and **has been verified.**.")
+        except mysql.connector.Error as e:
+            await ctx.send(f"❌ Error adding referral: {e}")
+
 
 
     @commands.command(name="referal_list")
@@ -242,7 +368,7 @@ class Referral(commands.Cog):
 
             query = """
                 UPDATE referrals
-                SET hours = %s
+                SET hours_now = %s
                 WHERE referred_id = %s
             """
             values = (new_data['hours_played'], referred_player)
@@ -341,13 +467,14 @@ class Referral(commands.Cog):
         if referral[4] == 1:  # `valid` is stored as 1 for verified
             print("PLAYTIME: ", playtime)
             await ctx.send(f"✅ `{referred_ign}` is already verified!")
-            await ctx.send(f"🕙 Playtime for player `{referred_ign}` has been adjusted!")
-            update_query = "UPDATE referrals SET hours = %s WHERE referred_id = %s"    
+            update_query = "UPDATE referrals SET hours_now = %s WHERE valid = 1"    
             cursor = self.db.cursor()
-            cursor.execute(update_query, (playtime, referred_id,))
+            cursor.execute(update_query, (playtime,))
             self.db.commit()
             cursor.close()        
             return
+        # Update hours for all valid players
+        
 
         # Proceed to verify the referral
         update_query = "UPDATE referrals SET valid = 1, referred_since = NOW(), last_activity = NULL WHERE referred_id = %s"
